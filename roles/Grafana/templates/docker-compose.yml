@@ -1,0 +1,19 @@
+version: '3.7'
+services:
+
+  grafana:
+    image: "grafana/grafana:9.4.3-ubuntu"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./provisioning/:/etc/grafana/provisioning/
+      - ./grafana.ini:/etc/grafana/grafana.ini
+    ports:
+      - 3000:3000
+    networks:
+      - grafana_network
+    restart: always
+
+volumes:
+  grafana_data:
+networks:
+  grafana_network:

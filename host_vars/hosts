@@ -1,0 +1,14 @@
+#Linux
+ansible_ssh_user=root
+
+#Windows
+#ansible_user=Administrator
+#ansible_password=
+#ansible_connection=winrm
+#ansible_port=5986
+#ansible_winrm_transport=basic
+#ansible_winrm_server_cert_validation=ignore
+
+
+
+#cat ~/.ssh/id_rsa.pub | ssh root@192.168.0.2 "cat >> ~/.ssh/authorized_keys"
