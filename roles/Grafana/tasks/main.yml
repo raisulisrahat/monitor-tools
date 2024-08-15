@@ -18,7 +18,7 @@
   pip:
     name: pip
     extra_args: --upgrade
-    executable: pip3
+    executable: pip
 
 - name: Install all requemants packages
   ansible.builtin.pip:

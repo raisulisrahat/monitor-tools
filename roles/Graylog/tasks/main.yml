@@ -1,2 +1,52 @@
 ---
 # tasks file for Graylog
+- name: Create a user 'ubuntu'
+  user:
+    name: ubuntu
+    shell: /bin/bash
+    groups: sudo,docker
+    append: yes
+
+- name: Install all requemants packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  with_items: "{{ Package }}"  
+
+- name: Install and upgrade pip
+  pip:
+    name: pip
+    extra_args: --upgrade
+    executable: pip3
+
+- name: Install all requemants packages
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    state: latest
+  with_items: 
+    - "docker"
+    - "docker-compose"
+
+- name: create dir for graylog
+  file:
+    path: /home/ubuntu/graylog
+    state: directory
+    mode: '0755'
+    group: ubuntu
+    owner: ubuntu
+
+- name: Copy Compose file
+  copy:
+    src: files/
+    dest: /home/ubuntu/graylog
+
+- name: graylog Compose Up
+  docker_compose:
+    project_src: /home/ubuntu/graylog
+    state: present
+
+- name: setup Nginx-proxy
+  package:
+    name: nginx
+    state: present

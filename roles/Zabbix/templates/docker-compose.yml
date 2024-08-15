@@ -1,0 +1,38 @@
+version: '3.7'
+services:
+
+  zabbix:
+    image: "zabbix/zabbix-web-nginx-mysql:alpine-6.0-latest"
+    container_name: zabbix-server
+    environment:
+    volumes:
+      - grafana_conf:/etc/agent/agent.yaml
+    restart: always
+
+volumes:
+  grafana_conf:
+
+  version: '3'
+
+services:
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:tag
+    container_name: zabbix-server
+    environment:
+      DB_SERVER_HOST: some-mysql-server
+      PHP_TZ: some-timezone
+    volumes:
+      - ./MYSQL_USER:/run/secrets/MYSQL_USER
+      - ./MYSQL_PASSWORD:/run/secrets/MYSQL_PASSWORD
+    secrets:
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+    ports:
+      - "8080:8080" # Adjust the ports as needed
+    restart: unless-stopped
+
+secrets:
+  MYSQL_USER:
+    file: ./MYSQL_USER
+  MYSQL_PASSWORD:
+    file: ./MYSQL_PASSWORD

@@ -3,7 +3,11 @@
   roles: 
     - Docker
     - Grafana
+    - influxdb
     #- Graylog
     #- Nagios
     #- Wazuh
     #- Zabbix
+# Monitor_agent List
+    #- telegraf  # agents server
+    #-

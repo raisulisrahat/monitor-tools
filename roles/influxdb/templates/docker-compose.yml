@@ -1,0 +1,22 @@
+version: '2.0'
+services:
+    influxdb:
+        image: "influxdb:1.8.10"
+        restart: always
+        environment:
+         - DOCKER_INFLUXDB_INIT_MODE=setup
+         - DOCKER_INFLUXDB_INIT_USERNAME=test
+         - DOCKER_INFLUXDB_INIT_PASSWORD=test123
+         - DOCKER_INFLUXDB_INIT_ORG=cts
+         - DOCKER_INFLUXDB_INIT_BUCKET=telegraf
+        ports:
+         - 8086:8086   
+        networks:
+            influxdb_network:
+        volumes:
+         - ./influxdb.conf:/etc/influxdb/influxdb.conf
+         - influxdb:/var/lib/influxdb
+volumes:
+    influxdb:
+networks:
+    influxdb_net
