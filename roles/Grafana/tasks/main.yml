@@ -1,11 +1,5 @@
 ---
 # tasks file for Grafana
-- name: Create a user 'ubuntu'
-  user:
-    name: ubuntu
-    shell: /bin/bash
-    groups: sudo,docker
-    append: yes
 
 - name: Install all requemants packages
   ansible.builtin.package:
@@ -20,38 +14,40 @@
     extra_args: --upgrade
     executable: pip
 
-- name: Install all requemants packages
+- name: Install required Python packages
   ansible.builtin.pip:
-    name: "{{ item }}"
+    name: "{{ item.name }}"
     state: latest
-  with_items: 
-    - "docker"
-    - "docker-compose"
+    extra_args: "{{ item.extra_args | default('') }}"
+  loop:
+    - name: "docker==4.4.4"
+    - name: "docker-compose==1.20.1"
+      extra_args: "--no-deps"
 
-- name: create dir for grafana
-  file:
-    path: /home/ubuntu/grafana
+- name: Create directory for Grafana
+  ansible.builtin.file:
+    path: /home/grafana
     state: directory
     mode: '0755'
-    group: ubuntu
-    owner: ubuntu
 
-- name: Copy Compose config file
-  copy:
+- name: Copy Docker Compose config files
+  ansible.builtin.copy:
     src: files/
-    dest: /home/ubuntu/grafana
+    dest: /home/grafana/
+    mode: '0644'
 
-- name: Copy Compose file
-  copy:
+- name: Copy Docker Compose template files
+  ansible.builtin.copy:
     src: templates/
-    dest: /home/ubuntu/grafana
+    dest: /home/grafana/
+    mode: '0644'
 
-- name: grafana Compose Up
-  docker_compose:
-    project_src: /home/ubuntu/grafana
+- name: Run Grafana using Docker Compose
+  community.docker.docker_compose:
+    project_src: /home/grafana
     state: present
 
-- name: setup Nginx-proxy
-  package:
-    name: nginx
-    state: present
+# - name: setup Nginx-proxy
+#   package:
+#     name: nginx
+#     state: present

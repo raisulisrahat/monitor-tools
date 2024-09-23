@@ -1,3 +1,5 @@
 [server]
 # 45.33.75.137 ansible_ssh_user=root
+192.168.1.113 ansible_ssh_user=root
+[agents]
 192.168.1.103 ansible_ssh_user=root

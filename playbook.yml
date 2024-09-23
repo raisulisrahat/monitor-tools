@@ -1,13 +1,16 @@
 ---
 - hosts: server #Centos #Ubuntu
   roles: 
-    - Docker
-    - Grafana
-    - influxdb
+    # - geerlingguy.docker
+    # - role: Grafana
+    - role: influxdb
     #- Graylog
     #- Nagios
     #- Wazuh
     #- Zabbix
 # Monitor_agent List
-    #- telegraf  # agents server
+- hosts: agents
+  roles:
+    - geerlingguy.docker
+    - role: telegraf          # Telegraf agent for collecting metrics
     #-

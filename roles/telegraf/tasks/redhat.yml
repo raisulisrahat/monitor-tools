@@ -1,0 +1,94 @@
+---
+
+- name: Install EPEL repository (for Rocky Linux/RedHat)
+  ansible.builtin.yum:
+    name: epel-release
+    state: present
+
+- name: Add InfluxData GPG key
+  ansible.builtin.get_url:
+    url: https://repos.influxdata.com/influxdata-archive_compat.key
+    dest: /etc/pki/rpm-gpg/RPM-GPG-KEY-influxdata
+    mode: '0644'
+
+- name: Add InfluxData repository
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/influxdata.repo
+    content: |
+      [influxdata]
+      name = InfluxData Repository - Stable
+      baseurl = https://repos.influxdata.com/stable/$basearch/main
+      enabled = 1
+      gpgcheck = 1
+      gpgkey = file:///etc/pki/rpm-gpg/RPM-GPG-KEY-influxdata
+    mode: '0644'
+
+- name: Install Telegraf service (Rocky Linux/RedHat)
+  ansible.builtin.yum:
+    name: telegraf
+    state: present
+    update_cache: true
+
+- name: Add Telegraf user to Docker group
+  ansible.builtin.user:
+    name: telegraf
+    groups: docker
+    append: true
+    state: present
+
+- name: Install Telegraf required dependencies (Rocky Linux/RedHat)
+  ansible.builtin.yum:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  with_items:
+    - smartmontools
+    - nvme-cli
+    - jq
+    - curl
+    - gnupg2
+    - java-11-openjdk
+    - java-11-openjdk-devel
+    - wget
+
+- name: Add Telegraf to sudoers for smartctl and nvme with NOPASSWD
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^{{ item }}'
+    line: '{{ item }}'
+    validate: 'visudo -cf %s'
+  with_items:
+    - "Cmnd_Alias SMARTCTL = /usr/sbin/smartctl"
+    - "telegraf ALL=(ALL) NOPASSWD: SMARTCTL"
+    - "Cmnd_Alias NVME = /usr/sbin/nvme"
+    - "telegraf ALL=(ALL) NOPASSWD: NVME"
+    - "Defaults!NVME !logfile, !syslog, !pam_session"
+
+- name: Create directory for Telegraf scripts
+  ansible.builtin.file:
+    path: /etc/telegraf/scripts
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Copy Telegraf bash scripts
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: /etc/telegraf/scripts/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  with_items:
+    - disk_usage.sh
+    - raid_mon.sh
+
+- name: Configure Telegraf
+  ansible.builtin.template:
+    src: telegraf.j2
+    dest: /etc/telegraf/telegraf.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart telegraf

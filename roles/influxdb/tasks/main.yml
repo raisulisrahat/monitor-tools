@@ -1,51 +1,37 @@
 ---
 # tasks file for roles/influxdb
 
-- name: System Update
-  ansible.builtin.package:
-    update_cache: true
-    cache_valid_time: 3600
-
-- name: Create user ubuntu
-  ansible.builtin.user:
-    name: ubuntu
-    shell: /bin/bash
-    groups: sudo, docker
-    append: true
-
 - name: Install and upgrade pip
   pip:
     name: pip
     extra_args: --upgrade
     executable: pip3
 
-- name: Install all requemants packages
-  ansible.builtin.pip:
-    name: "{{ item }}"
-    state: latest
-  with_items: 
-    - "docker"
-    - "docker-compose"
+# - name: Install all requemants packages
+#   ansible.builtin.pip:
+#     name: "{{ item }}"
+#     state: latest
+#   with_items: 
+#     - "docker"
+#     - "docker-compose"
 
 - name: create dir for influxdb
   file:
-    path: /home/ubuntu/influxdb
+    path: /home/influxdb
     state: directory
     mode: '0755'
-    group: ubuntu
-    owner: ubuntu
 
 - name: Copy Compose config file
   copy:
     src: files/
-    dest: /home/ubuntu/influxdb
+    dest: /home/influxdb
 
 - name: Copy Compose file
   copy:
     src: templates/
-    dest: /home/ubuntu/influxdb
+    dest: /home/influxdb
 
 - name: influxdb Compose Up
   docker_compose:
-    project_src: /home/ubuntu/influxdb
+    project_src: /home/influxdb
     state: present

@@ -7,7 +7,7 @@ Package:
   - unzip
   - git
   - ca-certificates 
-  - lsb-release
-  - apt-utils
+  # - lsb-release
+  #- apt-utils
   - python3
   - python3-pip

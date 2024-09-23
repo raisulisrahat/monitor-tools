@@ -1,0 +1,57 @@
+---
+# tasks file for Grafana
+- name: Create a user 'ubuntu'
+  user:
+    name: ubuntu
+    shell: /bin/bash
+    groups: sudo,docker
+    append: yes
+
+- name: Install all requemants packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  with_items: "{{ Package }}"  
+
+- name: Install and upgrade pip
+  pip:
+    name: pip
+    extra_args: --upgrade
+    executable: pip
+
+- name: Install all requemants packages
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    state: latest
+  with_items: 
+    - "docker"
+    - "docker-compose"
+
+- name: create dir for grafana
+  file:
+    path: /home/ubuntu/grafana
+    state: directory
+    mode: '0755'
+    group: ubuntu
+    owner: ubuntu
+
+- name: Copy Compose config file
+  copy:
+    src: files/
+    dest: /home/ubuntu/grafana
+
+- name: Copy Compose file
+  copy:
+    src: templates/
+    dest: /home/ubuntu/grafana
+
+- name: grafana Compose Up
+  docker_compose:
+    project_src: /home/ubuntu/grafana
+    state: present
+
+- name: setup Nginx-proxy
+  package:
+    name: nginx
+    state: present

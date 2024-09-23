@@ -1,78 +1,10 @@
 ---
 # tasks file for roles/telegraf
-- name: Add InfluxDB Key
-  ansible.builtin.get_url:
-    url: https://repos.influxdata.com/influxdata-archive_compat.key
-    dest: /etc/apt/trusted.gpg.d/influxdb.asc
-    force: true
-    mode: '0644'
 
-- name:
-  ansible.builtin.apt_repository:
-    repo: 'deb [signed-by=/etc/apt/trusted.gpg.d/influxdb.asc] https://repos.influxdata.com/debian stable main'
-    state: present
-    update_cache: true
+- name: Include Ubuntu tasks if the OS is Debian/Ubuntu
+  include_tasks: ubuntu.yml
+  when: ansible_facts['os_family'] == "Debian"
 
-- name: Install telegraf service
-  ansible.builtin.package:
-    name: telegraf
-    state: present
-    update_cache: true
-
-- name: Add telegraf user Docker group
-  ansible.builtin.user:
-    name: telegraf
-    groups: docker
-    append: true
-    state: present
-
-- name: Install telegraf required dependencies
-  ansible.builtin.package:
-    name: "{{ item }}"
-    state: present
-    update_cache: true
-  with_item:
-    - smartmonrools
-    - gsmartcontrol
-    - nvme-cli
-    - jq
-
-- name: Add telegraf to sudo group permission with nopassword to run smartctl
-  ansible.builtin.linefile:
-    dest: /etc/sudoers
-    state: present
-    regexp: '^{{ item }}'
-    line: '^{{ item }}'
-    validate: 'visudo -cf %s'
-  with_item:
-    - "Cmnd_Alias SMARTCTL = /usr/sbin/smartctl"
-    - "telegraf ALL=(ALL) NOPASSWD: SMARTCTL"
-    - "Cmnd_Alias NVME = /usr/sbin/nvme"
-    - "nvme ALL=(ALL) NOPASSWD: NVME"
-    - "Defaults!NVME !logfile, !syslog, !pam_session"
-
-- name: Run bash script for telegraf
-  ansible.builtin.file:
-    path: /etc/telegraf/scripts
-    state: directory
-    mode: '0755'
-
-- name: Copy telegraf bash script
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: /etc/telegraf/scripts/{{ item }}
-    owner: root
-    group: root
-    mode: "755"
-  with_item:
-    - disk_usage.sh
-    - raid_mon.sh
-
-- name: Add telegraf Configure
-  ansible.builtin.templates:
-    src: telegraf.j2
-    dest: /etc/telegraf/telegraf.conf
-    owner: root
-    groups: root
-    mode: '644'
-  notify: Restart telegraf
+- name: Include RedHat tasks if the OS is RedHat/Rocky
+  include_tasks: redhat.yml
+  when: ansible_facts['os_family'] == "RedHat"

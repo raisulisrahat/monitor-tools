@@ -1,2 +1,9 @@
 ---
 # vars file for roles/telegraf
+    datacenter: "dc1"
+    interval: "10s"
+    flush_interval: "10s"
+    influxdb_url: "http://localhost:8086"
+    influxdb_database: "telegraf"
+    influxdb_user: "test"
+    influxdb_password: "test1234"

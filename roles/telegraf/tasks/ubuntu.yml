@@ -1,0 +1,101 @@
+---
+- name: Download InfluxData GPG key
+  ansible.builtin.get_url:
+    url: https://repos.influxdata.com/influxdata-archive.key
+    dest: /tmp/influxdata-archive.key
+    mode: '0644'
+
+- name: Verify GPG key using SHA256 checksum
+  ansible.builtin.command:
+    cmd: "echo '943666881a1b8d9b849b74caebf02d3465d6beb716510d86a39f6c8e8dac7515  /tmp/influxdata-archive.key' | sha256sum -c -"
+  register: sha256_check
+  failed_when: "'OK' not in sha256_check.stdout"
+
+- name: Convert GPG key to gpg format and move to apt trusted keys
+  ansible.builtin.command:
+    cmd: "gpg --dearmor -o /etc/apt/trusted.gpg.d/influxdata-archive.gpg /tmp/influxdata-archive.key"
+  when: sha256_check is succeeded
+
+- name: Add InfluxData repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/trusted.gpg.d/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main"
+    state: present
+    update_cache: yes
+
+- name: Install Telegraf service (Ubuntu/Debian)
+  ansible.builtin.package:
+    name: telegraf
+    state: present
+    update_cache: true
+
+- name: Add Telegraf user to Docker group
+  ansible.builtin.user:
+    name: telegraf
+    groups: docker
+    append: true
+    state: present
+
+- name: Install Telegraf required dependencies (Ubuntu/Debian)
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  with_items:
+    - smartmontools         # For disk health monitoring
+    - gsmartcontrol         # For disk utility GUI (optional)
+    - nvme-cli              # For NVMe device monitoring
+    - jq                    # JSON processor
+    - apt-transport-https    # HTTPS transport for apt
+    - curl                  # Tool to transfer data from URLs
+    - gnupg2                # GnuPG for key management
+    - default-jre           # Java Runtime Environment for Jenkins
+    - default-jdk           # Java Development Kit (optional for Jenkins tasks)
+    - wget                  # Utility to download files from the web
+
+- name: Add Telegraf to sudoers for smartctl and nvme with NOPASSWD
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^{{ item }}'
+    line: '{{ item }}'
+    validate: 'visudo -cf %s'
+  with_items:
+    - "Cmnd_Alias SMARTCTL = /usr/sbin/smartctl"
+    - "telegraf ALL=(ALL) NOPASSWD: SMARTCTL"
+    - "Cmnd_Alias NVME = /usr/sbin/nvme"
+    - "telegraf ALL=(ALL) NOPASSWD: NVME"
+    - "Defaults!NVME !logfile, !syslog, !pam_session"
+
+- name: Create directory for Telegraf scripts
+  ansible.builtin.file:
+    path: /etc/telegraf/scripts
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Copy Telegraf bash scripts
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: /etc/telegraf/scripts/{{ item }}"
+    owner: root
+    group: root
+    mode: '0755'
+  with_items:
+    - disk_usage.sh
+    - raid_mon.sh
+
+- name: Configure Telegraf
+  ansible.builtin.template:
+    src: telegraf.j2
+    dest: /etc/telegraf/telegraf.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart telegraf
+
+- name: Restart Telegraf Service
+  ansible.builtin.systemd:
+    name: telegraf
+    state: restarted
+    enabled: yes

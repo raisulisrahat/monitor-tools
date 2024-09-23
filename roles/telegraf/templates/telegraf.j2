@@ -1,0 +1,39 @@
+# Global tags can be used to include additional metadata with each metric.
+[global_tags]
+  dc = "{{ datacenter }}" # datacenter name, can be passed as a variable
+
+# Configuration for telegraf agent
+[agent]
+  interval = "{{ interval }}"
+  round_interval = true
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  collection_jitter = "0s"
+  flush_interval = "{{ flush_interval }}"
+  flush_jitter = "0s"
+  precision = ""
+  debug = false
+  quiet = false
+  logfile = ""
+
+# Configuration for output plugin InfluxDB
+[[outputs.influxdb]]
+  urls = ["{{ influxdb_url }}"]
+  database = "{{ influxdb_database }}"
+  username = "{{ influxdb_user }}"
+  password = "{{ influxdb_password }}"
+  retention_policy = ""
+  timeout = "5s"
+
+# Add your input plugins here (e.g., CPU, memory, disk)
+[[inputs.cpu]]
+  percpu = true
+  totalcpu = true
+  collect_cpu_time = false
+  report_active = false
+
+[[inputs.mem]]
+  # no configuration for memory input
+
+[[inputs.disk]]
+  ignore_fs = ["tmpfs", "devtmpfs", "devfs"]
